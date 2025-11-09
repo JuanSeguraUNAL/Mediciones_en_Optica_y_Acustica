@@ -72,68 +72,53 @@ for param in parameters:
     
     print(f"  {param}: vmin={global_vmin[param]:.3f}, vmax={global_vmax[param]:.3f}")
 
-# Create figure with 3x5 grid
 print("\nGenerating plots...")
-fig, axes = plt.subplots(3, 5, figsize=(20, 12))
-fig.subplots_adjust(hspace=0.3, wspace=0.3)
 
-for row_idx, (channel_name, df, cmap_base) in enumerate(channels):
-    print(f"  Plotting {channel_name} channel...")
+for param, param_label in zip(parameters, param_labels):
+    print(f"  Plotting parameter: {param}")
     
-    for col_idx, (param, param_label) in enumerate(zip(parameters, param_labels)):
-        ax = axes[row_idx, col_idx]
+    # Crear figura con 1 fila (RGB) y 3 columnas
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig.subplots_adjust(wspace=0.2, hspace=0.1)
+    
+    for col_idx, (channel_name, df, cmap_base) in enumerate(channels):
+        ax = axes[col_idx]
         
-        # Use viridis for R2, otherwise use channel-specific colormap
-        if param == 'R2':
-            cmap = 'viridis'
-        else:
-            cmap = cmap_base
-        
-        # Get pre-computed map
+        # Seleccionar el mapa correspondiente
         param_map = param_maps[param][channel_name]
         
-        # Plot with shared scale
+        # Seleccionar colormap
+        cmap = 'viridis' if param == 'R2' else cmap_base
+        
+        # Graficar
         im = ax.imshow(param_map, cmap=cmap, origin='upper', aspect='equal',
                       vmin=global_vmin[param], vmax=global_vmax[param])
         
-        # Add colorbar
+        # Añadir colorbar
         cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         cbar.ax.tick_params(labelsize=8)
         
-        # Title and labels
-        if row_idx == 0:
-            ax.set_title(param_label, fontsize=14, fontweight='bold')
-        
-        if col_idx == 0:
-            ax.set_ylabel(f'{channel_name} Channel', fontsize=12, fontweight='bold')
-        
-        # Remove ticks for cleaner look
+        # Quitar ticks y títulos
         ax.set_xticks([])
         ax.set_yticks([])
+        ax.set_title("")  # sin título
         
-        # Add text with statistics
+        # Añadir estadísticas
         valid_data = param_map[~np.isnan(param_map)]
         if len(valid_data) > 0:
             mean_val = np.mean(valid_data)
             std_val = np.std(valid_data)
             ax.text(0.02, 0.98, f'μ={mean_val:.2f}\nσ={std_val:.2f}',
-                   transform=ax.transAxes, fontsize=8, verticalalignment='top',
-                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
+                    transform=ax.transAxes, fontsize=8, verticalalignment='top',
+                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
+    
+    # Guardar figura sin título general
+    output_path = f"./Practica7_resultados/{param}_colormap.pdf"
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    
+    print(f"    → Saved: {output_path}")
 
-# Main title - determine if test or full mode based on number of pixels
-n_pixels = len(df_red)
-total_pixels = ROI_width * ROI_height
-if n_pixels < total_pixels:
-    mode_text = f'Test Mode ({n_pixels:,} pixels)'
-else:
-    mode_text = f'Full ROI ({n_pixels:,} pixels)'
-
-fig.suptitle(f'Ellipse Parameters Spatial Distribution - {mode_text}', 
-             fontsize=16, fontweight='bold', y=0.995)
-
-# Save
-output_path = "./Practica7_resultados/ellipse_parameters_colormaps.pdf"
-plt.savefig(output_path, dpi=300, bbox_inches='tight')
 print(f"\nPlot saved to: {output_path}")
 
 print("\n" + "="*60)
